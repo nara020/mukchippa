@@ -286,6 +286,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentRound = roomData.currentRound || 0;
         const attacker = roomData.attacker;
 
+        // 내가 아직 선택 안했고 결과 처리 중이 아니면 버튼 활성화
+        if (!myData?.ready && !isProcessingResult) {
+            choiceBtns.forEach(btn => {
+                btn.classList.remove('selected', 'disabled');
+            });
+            resultDisplay.classList.add('hidden');
+        }
+
         // 점수 표시
         myScore.textContent = myData?.score || 0;
         opponentScore.textContent = oppData?.score || 0;
@@ -327,14 +335,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // 둘 다 선택했으면 결과 처리
         if (myData?.ready && oppData?.ready && !isProcessingResult) {
             processResult(roomData);
-        }
-
-        // 결과 표시 중이 아니면 버튼 초기화
-        if (!isProcessingResult && !myData?.ready) {
-            resultDisplay.classList.add('hidden');
-            choiceBtns.forEach(btn => {
-                btn.classList.remove('selected', 'disabled');
-            });
         }
     }
 
