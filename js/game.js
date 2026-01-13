@@ -13,11 +13,7 @@ function getWinner(choice1, choice2) {
     return 'player2';
 }
 
-// 묵찌빠 규칙:
-// 1. 먼저 가위바위보로 공격권 결정
-// 2. 같은 것을 내면 공격자 승리
-// 3. 다르면 가위바위보 규칙으로 이긴 쪽이 공격권
-
+// 묵찌빠 라운드 처리
 function processMukchippa(attackerChoice, defenderChoice, currentAttacker) {
     // 같은 것을 내면 공격자 승리!
     if (attackerChoice === defenderChoice) {
@@ -28,22 +24,20 @@ function processMukchippa(attackerChoice, defenderChoice, currentAttacker) {
         };
     }
 
-    // 다르면 가위바위보 규칙 적용
-    const rpsWinner = getWinner(attackerChoice, defenderChoice);
+    // 다르면 가위바위보 규칙으로 공격권 결정
+    const rpsResult = CHOICES[attackerChoice].beats === defenderChoice ? 'attacker' : 'defender';
 
-    if (rpsWinner === 'player1') {
-        // player1이 이김
-        const newAttacker = currentAttacker === 'player1' ? 'player1' : 'player1';
+    if (rpsResult === 'attacker') {
         return {
             winner: null,
-            newAttacker: 'player1',
+            newAttacker: currentAttacker,
             isFinal: false
         };
     } else {
-        // player2가 이김
+        const newAttacker = currentAttacker === 'player1' ? 'player2' : 'player1';
         return {
             winner: null,
-            newAttacker: 'player2',
+            newAttacker: newAttacker,
             isFinal: false
         };
     }
@@ -89,17 +83,14 @@ function processRound(roomData, myPlayerNum) {
     const result = processMukchippa(attackerChoice, defenderChoice, attacker);
 
     if (result.isFinal) {
-        // 게임 종료!
-        const winnerNum = result.winner;
         return {
             type: 'game_over',
-            winner: winnerNum,
-            message: winnerNum === myPlayerNum ? '승리!' : '패배...',
+            winner: result.winner,
+            message: result.winner === myPlayerNum ? '승리!' : '패배...',
             gameOver: true
         };
     }
 
-    // 공격권 변경
     const attackerChanged = result.newAttacker !== attacker;
     return {
         type: 'continue',
@@ -124,6 +115,7 @@ class GameManager {
         this.roomCode = null;
         this.playerNum = null;
         this.unsubscribe = null;
+        this.unsubscribeChat = null;
         this.currentRoomData = null;
     }
 
@@ -149,14 +141,19 @@ class GameManager {
         });
     }
 
+    subscribeChat(callback) {
+        if (!this.roomCode) return;
+        this.unsubscribeChat = subscribeToChat(this.roomCode, callback);
+    }
+
+    async sendChat(message) {
+        if (!this.roomCode || !this.playerNum || !message.trim()) return;
+        await sendChatMessage(this.roomCode, this.playerNum, message.trim());
+    }
+
     async makeChoice(choice) {
         if (!this.roomCode || !this.playerNum) return;
         await sendChoice(this.roomCode, this.playerNum, choice);
-    }
-
-    async vote(value) {
-        if (!this.roomCode || !this.playerNum) return;
-        await sendVote(this.roomCode, this.playerNum, value);
     }
 
     async startGame() {
@@ -165,6 +162,7 @@ class GameManager {
             state: 'playing',
             currentRound: 0
         });
+        await sendSystemMessage(this.roomCode, '게임이 시작되었습니다!');
     }
 
     async nextRound(newAttacker, incrementRound = true) {
@@ -203,11 +201,55 @@ class GameManager {
             state: 'finished',
             winner: winnerNum
         });
+
+        const winnerName = winnerNum === 'player1' ? 'Player 1' : 'Player 2';
+        await sendSystemMessage(this.roomCode, `${winnerName} 승리! 🎉`);
+    }
+
+    async proposeBestOf3() {
+        if (!this.roomCode || !this.playerNum) return;
+        await proposeBestOf3(this.roomCode, this.playerNum);
+        await sendSystemMessage(this.roomCode, `${this.playerNum === 'player1' ? 'Player 1' : 'Player 2'}이 3판 2선승을 제안했습니다!`);
+    }
+
+    async respondToProposal(accepted) {
+        if (!this.roomCode) return;
+        await respondToProposal(this.roomCode, accepted);
+
+        if (accepted) {
+            await sendSystemMessage(this.roomCode, '3판 2선승이 시작됩니다!');
+            // 3판 2선승 모드로 게임 시작
+            await updateGameState(this.roomCode, { bestOf3: true });
+            await resetScores(this.roomCode);
+        } else {
+            await sendSystemMessage(this.roomCode, '제안이 거절되었습니다.');
+            await updateGameState(this.roomCode, {
+                'proposal/from': null,
+                'proposal/accepted': null
+            });
+        }
     }
 
     async resetGame() {
         if (!this.roomCode) return;
         await resetGame(this.roomCode);
+    }
+
+    async playAgain() {
+        if (!this.roomCode) return;
+        await updateGameState(this.roomCode, {
+            state: 'playing',
+            currentRound: 0,
+            attacker: null,
+            winner: null,
+            'players/player1/choice': null,
+            'players/player1/ready': false,
+            'players/player2/choice': null,
+            'players/player2/ready': false,
+            'proposal/from': null,
+            'proposal/accepted': null
+        });
+        await sendSystemMessage(this.roomCode, '새 게임이 시작됩니다!');
     }
 
     getOpponentNum() {
@@ -221,6 +263,9 @@ class GameManager {
     cleanup() {
         if (this.unsubscribe) {
             this.unsubscribe();
+        }
+        if (this.unsubscribeChat) {
+            this.unsubscribeChat();
         }
     }
 }

@@ -17,18 +17,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const joinSubmitBtn = document.getElementById('join-submit-btn');
     const copyLinkBtn = document.getElementById('copy-link-btn');
     const startGameBtn = document.getElementById('start-game-btn');
-    const voteYesBtn = document.getElementById('vote-yes');
-    const voteNoBtn = document.getElementById('vote-no');
     const choiceBtns = document.querySelectorAll('.choice-btn');
     const playAgainBtn = document.getElementById('play-again-btn');
     const newRoomBtn = document.getElementById('new-room-btn');
+    const proposeBtn = document.getElementById('propose-btn');
 
     // 상태 표시 요소들
     const displayRoomCode = document.getElementById('display-room-code');
     const player1Slot = document.getElementById('player1-slot');
     const player2Slot = document.getElementById('player2-slot');
-    const voteStatus = document.getElementById('vote-status');
-    const voteSection = document.getElementById('vote-section');
     const roundInfo = document.getElementById('round-info');
     const myScore = document.getElementById('my-score');
     const opponentScore = document.getElementById('opponent-score');
@@ -39,12 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const myChoiceDisplay = document.getElementById('my-choice-display');
     const opponentChoiceDisplay = document.getElementById('opponent-choice-display');
     const resultText = document.getElementById('result-text');
-    const finalResult = document.getElementById('final-result');
+    const finalEmoji = document.getElementById('final-emoji');
+    const finalText = document.getElementById('final-text');
     const finalScore = document.getElementById('final-score');
     const finalMessage = document.getElementById('final-message');
+    const proposalSection = document.getElementById('proposal-section');
+    const proposalStatus = document.getElementById('proposal-status');
+
+    // 채팅 요소들
+    const chatMessages = document.getElementById('chat-messages');
+    const chatWaiting = document.getElementById('chat-waiting');
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
 
     // 현재 상태
     let isProcessingResult = false;
+    let chatInitialized = false;
 
     // 화면 전환
     function showScreen(screenName) {
@@ -64,11 +71,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 방 만들기
     createRoomBtn.addEventListener('click', async () => {
         createRoomBtn.disabled = true;
-        createRoomBtn.innerHTML = '<span class="loading"></span> 생성 중...';
+        createRoomBtn.innerHTML = '<span class="loading"></span>';
 
         try {
             const roomCode = await gameManager.createGame();
             setupRoomSubscription();
+            setupChatSubscription();
             showWaitingRoom(roomCode);
         } catch (error) {
             alert('방 생성 실패: ' + error.message);
@@ -80,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 방 참가 폼 표시
     joinRoomBtn.addEventListener('click', () => {
-        joinForm.classList.toggle('hidden');
+        joinForm.classList.toggle('show');
         roomCodeInput.focus();
     });
 
@@ -104,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await gameManager.joinGame(code);
             setupRoomSubscription();
+            setupChatSubscription();
             showWaitingRoom(code);
         } catch (error) {
             alert('참가 실패: ' + error.message);
@@ -115,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
         displayRoomCode.textContent = roomCode;
         showScreen('waiting');
 
-        // URL 업데이트
         const url = new URL(window.location);
         url.searchParams.set('room', roomCode);
         window.history.pushState({}, '', url);
@@ -125,24 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
     copyLinkBtn.addEventListener('click', () => {
         const url = window.location.href;
         navigator.clipboard.writeText(url).then(() => {
-            copyLinkBtn.textContent = '복사됨! ✅';
+            copyLinkBtn.textContent = '복사됨!';
             setTimeout(() => {
-                copyLinkBtn.textContent = '링크 복사 📋';
+                copyLinkBtn.textContent = '링크 복사';
             }, 2000);
         });
-    });
-
-    // 투표
-    voteYesBtn.addEventListener('click', () => {
-        gameManager.vote(true);
-        voteYesBtn.classList.add('selected');
-        voteNoBtn.classList.remove('selected');
-    });
-
-    voteNoBtn.addEventListener('click', () => {
-        gameManager.vote(false);
-        voteNoBtn.classList.add('selected');
-        voteYesBtn.classList.remove('selected');
     });
 
     // 게임 시작
@@ -157,25 +152,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const choice = btn.dataset.choice;
 
-            // UI 업데이트
             choiceBtns.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
 
-            // 선택 전송
             await gameManager.makeChoice(choice);
         });
     });
 
-    // 다시하기
+    // 한판 더
     playAgainBtn.addEventListener('click', async () => {
-        await gameManager.resetGame();
+        await gameManager.playAgain();
     });
 
-    // 새 방 만들기
+    // 나가기
     newRoomBtn.addEventListener('click', () => {
         gameManager.cleanup();
         window.location.href = window.location.pathname;
     });
+
+    // 3판 2선승 제안
+    proposeBtn.addEventListener('click', async () => {
+        await gameManager.proposeBestOf3();
+        proposeBtn.disabled = true;
+        proposeBtn.textContent = '제안함';
+    });
+
+    // 채팅 전송
+    function sendChatMessage() {
+        const message = chatInput.value.trim();
+        if (message) {
+            gameManager.sendChat(message);
+            chatInput.value = '';
+        }
+    }
+
+    chatSendBtn.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendChatMessage();
+        }
+    });
+
+    // 채팅 구독 설정
+    function setupChatSubscription() {
+        gameManager.subscribeChat((msg) => {
+            if (!chatInitialized) {
+                chatWaiting.classList.add('hidden');
+                chatInitialized = true;
+            }
+            addChatMessage(msg);
+        });
+    }
+
+    // 채팅 메시지 추가
+    function addChatMessage(msg) {
+        const div = document.createElement('div');
+        div.className = 'chat-message';
+
+        if (msg.from === 'system') {
+            div.classList.add('system');
+        } else if (msg.from === gameManager.playerNum) {
+            div.classList.add('mine');
+        } else {
+            div.classList.add('theirs');
+        }
+
+        div.textContent = msg.message;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
 
     // 방 구독 설정
     function setupRoomSubscription() {
@@ -208,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const player1 = roomData.players?.player1;
         const player2 = roomData.players?.player2;
 
-        // 플레이어 상태 표시
         if (player1?.joined) {
             player1Slot.querySelector('.player-emoji').textContent = '🙋';
             player1Slot.querySelector('.player-name').textContent =
@@ -221,20 +265,11 @@ document.addEventListener('DOMContentLoaded', () => {
             player2Slot.querySelector('.player-name').textContent =
                 gameManager.playerNum === 'player2' ? '나' : '상대방';
             player2Slot.classList.add('ready');
+
+            // 채팅 대기 메시지 숨기기
+            chatWaiting.classList.add('hidden');
         }
 
-        // 투표 상태
-        const votes = roomData.votes || {};
-        let voteText = '';
-        if (votes.player1 !== null && votes.player1 !== undefined) {
-            voteText += `Player 1: ${votes.player1 ? '👍' : '👎'} `;
-        }
-        if (votes.player2 !== null && votes.player2 !== undefined) {
-            voteText += `Player 2: ${votes.player2 ? '👍' : '👎'}`;
-        }
-        voteStatus.textContent = voteText;
-
-        // 둘 다 접속하면 시작 버튼 표시 (호스트만)
         if (player1?.joined && player2?.joined && gameManager.isHost()) {
             startGameBtn.classList.remove('hidden');
         }
@@ -257,17 +292,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 라운드 정보
         if (currentRound === 0 || !attacker) {
-            roundInfo.textContent = '가위바위보! (공격권 결정)';
-            attackerIndicator.textContent = '';
-            attackerIndicator.className = 'attacker-indicator';
+            roundInfo.textContent = '가위바위보';
+            attackerIndicator.classList.add('hidden');
         } else {
-            roundInfo.textContent = `묵찌빠 ${currentRound}라운드`;
+            roundInfo.textContent = `묵찌빠 ${currentRound}R`;
+            attackerIndicator.classList.remove('hidden');
 
             if (attacker === myNum) {
-                attackerIndicator.textContent = '🔥 내가 공격!';
+                attackerIndicator.textContent = '🔥 공격';
                 attackerIndicator.className = 'attacker-indicator attack';
             } else {
-                attackerIndicator.textContent = '🛡️ 내가 수비!';
+                attackerIndicator.textContent = '🛡️ 수비';
                 attackerIndicator.className = 'attacker-indicator defense';
             }
         }
@@ -275,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 선택 상태
         if (myData?.ready) {
             myStatus.classList.add('selected');
-            myStatus.querySelector('.status-text').textContent = '선택 완료!';
+            myStatus.querySelector('.status-text').textContent = '완료';
         } else {
             myStatus.classList.remove('selected');
             myStatus.querySelector('.status-text').textContent = '선택하세요';
@@ -283,10 +318,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (oppData?.ready) {
             opponentStatus.classList.add('selected');
-            opponentStatus.querySelector('.status-text').textContent = '선택 완료!';
+            opponentStatus.querySelector('.status-text').textContent = '완료';
         } else {
             opponentStatus.classList.remove('selected');
-            opponentStatus.querySelector('.status-text').textContent = '선택 중...';
+            opponentStatus.querySelector('.status-text').textContent = '대기중';
         }
 
         // 둘 다 선택했으면 결과 처리
@@ -312,15 +347,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const myChoice = roomData.players[myNum].choice;
         const oppChoice = roomData.players[oppNum].choice;
 
-        // 버튼 비활성화
         choiceBtns.forEach(btn => btn.classList.add('disabled'));
 
-        // 결과 표시
         resultDisplay.classList.remove('hidden');
         myChoiceDisplay.querySelector('.result-emoji').textContent = CHOICES[myChoice].emoji;
         opponentChoiceDisplay.querySelector('.result-emoji').textContent = CHOICES[oppChoice].emoji;
 
-        // 결과 계산
         const result = processRound(roomData, myNum);
 
         if (!result) {
@@ -337,27 +369,22 @@ document.addEventListener('DOMContentLoaded', () => {
             resultText.classList.add(result.winner === myNum ? 'win' : 'lose');
         }
 
-        // 잠시 대기 후 다음 단계
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // 호스트만 상태 업데이트
         if (gameManager.isHost()) {
             if (result.gameOver) {
-                // 점수 기록
                 await gameManager.recordWin(result.winner);
 
-                // 3판 2선승 체크
-                const player1Score = (roomData.players.player1.score || 0) + (result.winner === 'player1' ? 1 : 0);
-                const player2Score = (roomData.players.player2.score || 0) + (result.winner === 'player2' ? 1 : 0);
-
-                const bestOf3 = roomData.votes?.player1 && roomData.votes?.player2;
-
-                if (bestOf3) {
+                // 3판 2선승 모드 체크
+                if (roomData.bestOf3) {
+                    const player1Score = (roomData.players.player1.score || 0) + (result.winner === 'player1' ? 1 : 0);
+                    const player2Score = (roomData.players.player2.score || 0) + (result.winner === 'player2' ? 1 : 0);
                     const finalWinner = checkBestOf3Winner(player1Score, player2Score);
+
                     if (finalWinner) {
                         await gameManager.endGame(finalWinner);
                     } else {
-                        // 다음 게임
+                        // 다음 라운드
                         await gameManager.nextRound(null, false);
                         await updateGameState(gameManager.roomCode, {
                             attacker: null,
@@ -368,10 +395,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     await gameManager.endGame(result.winner);
                 }
             } else if (result.type === 'draw') {
-                // 무승부 - 다시
                 await gameManager.nextRound(null, false);
             } else {
-                // 계속
                 await gameManager.nextRound(result.nextAttacker, result.type === 'attacker_decided');
             }
         }
@@ -384,19 +409,85 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen('final');
 
         const myNum = gameManager.playerNum;
+        const oppNum = gameManager.getOpponentNum();
         const winner = roomData.winner;
         const isWinner = winner === myNum;
 
         const myScoreVal = roomData.players[myNum]?.score || 0;
-        const oppScoreVal = roomData.players[gameManager.getOpponentNum()]?.score || 0;
+        const oppScoreVal = roomData.players[oppNum]?.score || 0;
 
-        finalResult.querySelector('.final-emoji').textContent = isWinner ? '🎉' : '😢';
-        finalResult.querySelector('.final-text').textContent = isWinner ? '승리!' : '패배...';
+        finalEmoji.textContent = isWinner ? '🎉' : '😢';
+        finalText.textContent = isWinner ? '승리!' : '패배...';
+        finalText.className = 'final-text ' + (isWinner ? 'win' : 'lose');
         finalScore.textContent = `${myScoreVal} : ${oppScoreVal}`;
 
         finalMessage.textContent = isWinner
-            ? '상대방이 음료수 사는 거예요~ 🥤'
+            ? '상대방이 음료수 사는 거예요 🥤'
             : '음료수 사세요~ 🥤';
+
+        // 3판 2선승 제안 처리
+        updateProposalSection(roomData);
+    }
+
+    // 제안 섹션 업데이트
+    function updateProposalSection(roomData) {
+        const proposal = roomData.proposal;
+        const myNum = gameManager.playerNum;
+        const oppNum = gameManager.getOpponentNum();
+
+        // 이미 3판 2선승이었으면 제안 숨기기
+        if (roomData.bestOf3) {
+            proposalSection.classList.add('hidden');
+            return;
+        }
+
+        proposalSection.classList.remove('hidden');
+
+        if (!proposal?.from) {
+            // 제안 없음 - 제안 버튼 표시
+            proposeBtn.classList.remove('hidden');
+            proposeBtn.disabled = false;
+            proposeBtn.textContent = '제안하기';
+            proposalStatus.textContent = '';
+            proposalSection.classList.remove('received');
+
+            // 수락/거절 버튼 제거
+            const existingBtns = proposalSection.querySelectorAll('.response-btn');
+            existingBtns.forEach(btn => btn.remove());
+        } else if (proposal.from === myNum) {
+            // 내가 제안함
+            proposeBtn.classList.remove('hidden');
+            proposeBtn.disabled = true;
+            proposeBtn.textContent = '제안함';
+            proposalStatus.textContent = '상대방 응답 대기 중...';
+            proposalSection.classList.remove('received');
+        } else {
+            // 상대방이 제안함
+            proposeBtn.classList.add('hidden');
+            proposalSection.classList.add('received');
+            proposalStatus.textContent = '';
+
+            // 수락/거절 버튼이 없으면 추가
+            if (!proposalSection.querySelector('.response-btn')) {
+                const btnRow = document.createElement('div');
+                btnRow.className = 'button-row';
+
+                const acceptBtn = document.createElement('button');
+                acceptBtn.className = 'btn btn-primary response-btn';
+                acceptBtn.textContent = '수락';
+                acceptBtn.onclick = () => gameManager.respondToProposal(true);
+
+                const rejectBtn = document.createElement('button');
+                rejectBtn.className = 'btn btn-secondary response-btn';
+                rejectBtn.textContent = '거절';
+                rejectBtn.onclick = () => gameManager.respondToProposal(false);
+
+                btnRow.appendChild(acceptBtn);
+                btnRow.appendChild(rejectBtn);
+                proposalSection.querySelector('.button-row')?.remove();
+                proposalSection.insertBefore(btnRow, proposalStatus);
+            }
+        }
     }
 
     // 초기화

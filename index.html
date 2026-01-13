@@ -4,137 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>묵찌빠 온라인</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- 메인 화면 -->
-        <div id="main-screen" class="screen active">
-            <h1 class="title">묵찌빠</h1>
-            <p class="subtitle">온라인 대전</p>
+    <div class="app-container">
+        <!-- 게임 패널 -->
+        <div class="game-panel">
+            <!-- 메인 화면 -->
+            <div id="main-screen" class="screen active">
+                <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                    <h1 class="title">묵찌빠</h1>
+                    <p class="subtitle">온라인 대전</p>
 
-            <div class="button-group">
-                <button id="create-room-btn" class="btn btn-primary">
-                    <span class="btn-icon">🎮</span>
-                    방 만들기
-                </button>
-                <button id="join-room-btn" class="btn btn-secondary">
-                    <span class="btn-icon">🚪</span>
-                    방 참가하기
-                </button>
-            </div>
-
-            <div id="join-form" class="join-form hidden">
-                <input type="text" id="room-code-input" placeholder="방 코드 입력" maxlength="6">
-                <button id="join-submit-btn" class="btn btn-primary">입장</button>
-            </div>
-        </div>
-
-        <!-- 대기실 -->
-        <div id="waiting-screen" class="screen">
-            <h2>대기실</h2>
-            <div class="room-info">
-                <p>방 코드</p>
-                <div class="room-code" id="display-room-code">ABC123</div>
-                <button id="copy-link-btn" class="btn btn-small">링크 복사 📋</button>
-            </div>
-
-            <div class="players-status">
-                <div class="player-slot" id="player1-slot">
-                    <span class="player-emoji">👤</span>
-                    <span class="player-name">대기 중...</span>
-                </div>
-                <div class="vs">VS</div>
-                <div class="player-slot" id="player2-slot">
-                    <span class="player-emoji">👤</span>
-                    <span class="player-name">대기 중...</span>
-                </div>
-            </div>
-
-            <div class="vote-section" id="vote-section">
-                <p>3판 2선승으로 할까요?</p>
-                <div class="vote-buttons">
-                    <button id="vote-yes" class="btn btn-vote">👍 네</button>
-                    <button id="vote-no" class="btn btn-vote">👎 아니오</button>
-                </div>
-                <p class="vote-status" id="vote-status"></p>
-            </div>
-
-            <button id="start-game-btn" class="btn btn-primary hidden">게임 시작!</button>
-        </div>
-
-        <!-- 게임 화면 -->
-        <div id="game-screen" class="screen">
-            <div class="game-header">
-                <div class="score-board">
-                    <span id="my-score">0</span>
-                    <span class="score-divider">:</span>
-                    <span id="opponent-score">0</span>
-                </div>
-                <div class="round-info" id="round-info">1라운드 - 가위바위보</div>
-            </div>
-
-            <div class="game-status">
-                <div class="player-status" id="my-status">
-                    <span class="status-emoji">🙋</span>
-                    <span class="status-text">선택하세요</span>
-                </div>
-                <div class="player-status" id="opponent-status">
-                    <span class="status-emoji">🙆</span>
-                    <span class="status-text">선택 중...</span>
-                </div>
-            </div>
-
-            <div class="attacker-indicator" id="attacker-indicator">
-                <!-- 공격권 표시 -->
-            </div>
-
-            <div class="choice-buttons">
-                <button class="choice-btn" data-choice="rock">
-                    <span class="choice-emoji">✊</span>
-                    <span class="choice-label">묵</span>
-                </button>
-                <button class="choice-btn" data-choice="scissors">
-                    <span class="choice-emoji">✌️</span>
-                    <span class="choice-label">찌</span>
-                </button>
-                <button class="choice-btn" data-choice="paper">
-                    <span class="choice-emoji">🖐️</span>
-                    <span class="choice-label">빠</span>
-                </button>
-            </div>
-
-            <div class="result-display hidden" id="result-display">
-                <div class="result-choices">
-                    <div class="result-choice" id="my-choice-display">
-                        <span class="result-emoji">✊</span>
-                        <span class="result-label">나</span>
+                    <div class="button-group">
+                        <button id="create-room-btn" class="btn btn-primary">
+                            <span class="btn-icon">🎮</span>
+                            방 만들기
+                        </button>
+                        <button id="join-room-btn" class="btn btn-secondary">
+                            <span class="btn-icon">🚪</span>
+                            방 참가하기
+                        </button>
                     </div>
-                    <div class="result-vs">VS</div>
-                    <div class="result-choice" id="opponent-choice-display">
-                        <span class="result-emoji">✌️</span>
-                        <span class="result-label">상대</span>
+
+                    <div id="join-form" class="join-form">
+                        <div class="text-field">
+                            <input type="text" id="room-code-input" placeholder="방 코드 6자리" maxlength="6">
+                        </div>
+                        <button id="join-submit-btn" class="btn btn-primary">입장</button>
                     </div>
                 </div>
-                <p class="result-text" id="result-text">승리!</p>
+            </div>
+
+            <!-- 대기실 -->
+            <div id="waiting-screen" class="screen">
+                <div class="room-info">
+                    <p class="room-info-label">방 코드</p>
+                    <div class="room-code" id="display-room-code">ABC123</div>
+                    <button id="copy-link-btn" class="btn btn-text">링크 복사</button>
+                </div>
+
+                <div class="players-status">
+                    <div class="player-slot" id="player1-slot">
+                        <span class="player-emoji">👤</span>
+                        <span class="player-name">대기 중...</span>
+                    </div>
+                    <div class="vs">VS</div>
+                    <div class="player-slot" id="player2-slot">
+                        <span class="player-emoji">👤</span>
+                        <span class="player-name">대기 중...</span>
+                    </div>
+                </div>
+
+                <div style="flex:1;"></div>
+
+                <button id="start-game-btn" class="btn btn-primary hidden" style="width:100%;">게임 시작</button>
+            </div>
+
+            <!-- 게임 화면 -->
+            <div id="game-screen" class="screen">
+                <div class="game-header">
+                    <div class="score-board">
+                        <span class="my-score" id="my-score">0</span>
+                        <span class="score-divider">:</span>
+                        <span class="opponent-score" id="opponent-score">0</span>
+                    </div>
+                    <div class="round-info" id="round-info">가위바위보</div>
+                </div>
+
+                <div class="game-status">
+                    <div class="player-status" id="my-status">
+                        <span class="status-emoji">🙋</span>
+                        <span class="status-text">선택하세요</span>
+                    </div>
+                    <div class="player-status" id="opponent-status">
+                        <span class="status-emoji">🙆</span>
+                        <span class="status-text">대기중</span>
+                    </div>
+                </div>
+
+                <div class="attacker-indicator hidden" id="attacker-indicator"></div>
+
+                <div class="choice-buttons">
+                    <button class="choice-btn" data-choice="rock">
+                        <span class="choice-emoji">✊</span>
+                        <span class="choice-label">묵</span>
+                    </button>
+                    <button class="choice-btn" data-choice="scissors">
+                        <span class="choice-emoji">✌️</span>
+                        <span class="choice-label">찌</span>
+                    </button>
+                    <button class="choice-btn" data-choice="paper">
+                        <span class="choice-emoji">🖐️</span>
+                        <span class="choice-label">빠</span>
+                    </button>
+                </div>
+
+                <div class="result-display hidden" id="result-display">
+                    <div class="result-choices">
+                        <div class="result-choice" id="my-choice-display">
+                            <span class="result-emoji">✊</span>
+                            <span class="result-label">나</span>
+                        </div>
+                        <div class="result-vs">VS</div>
+                        <div class="result-choice" id="opponent-choice-display">
+                            <span class="result-emoji">✌️</span>
+                            <span class="result-label">상대</span>
+                        </div>
+                    </div>
+                    <p class="result-text" id="result-text">승리!</p>
+                </div>
+            </div>
+
+            <!-- 최종 결과 화면 -->
+            <div id="final-screen" class="screen">
+                <div class="final-result">
+                    <span class="final-emoji" id="final-emoji">🎉</span>
+                    <h2 class="final-text" id="final-text">승리!</h2>
+                    <p class="final-score" id="final-score">2 : 1</p>
+                </div>
+
+                <div class="final-message" id="final-message">
+                    상대방이 음료수 사는 거예요 🥤
+                </div>
+
+                <!-- 3판 2선승 제안 -->
+                <div class="proposal-section" id="proposal-section">
+                    <p>3판 2선승으로 더 할까요?</p>
+                    <div class="button-row">
+                        <button id="propose-btn" class="btn btn-primary">제안하기</button>
+                    </div>
+                    <p class="proposal-status" id="proposal-status"></p>
+                </div>
+
+                <div class="button-row">
+                    <button id="play-again-btn" class="btn btn-secondary">한판 더</button>
+                    <button id="new-room-btn" class="btn btn-text">나가기</button>
+                </div>
             </div>
         </div>
 
-        <!-- 최종 결과 화면 -->
-        <div id="final-screen" class="screen">
-            <div class="final-result" id="final-result">
-                <span class="final-emoji">🎉</span>
-                <h2 class="final-text">승리!</h2>
-                <p class="final-score" id="final-score">2 : 1</p>
+        <!-- 채팅 패널 -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <h3>💬 채팅</h3>
             </div>
-
-            <div class="final-message" id="final-message">
-                음료수 사세요~ 🥤
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-waiting" id="chat-waiting">
+                    상대방을 기다리는 중...
+                </div>
             </div>
-
-            <div class="button-group">
-                <button id="play-again-btn" class="btn btn-primary">다시하기</button>
-                <button id="new-room-btn" class="btn btn-secondary">새 방 만들기</button>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="메시지 입력..." maxlength="200">
+                <button class="chat-send-btn" id="chat-send-btn">➤</button>
             </div>
         </div>
     </div>
