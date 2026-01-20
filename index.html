@@ -164,10 +164,28 @@
         </div>
     </div>
 
+    <!-- 3D 배틀 오버레이 -->
+    <div id="battle-overlay" class="battle-overlay">
+        <div id="battle-container"></div>
+        <div class="battle-countdown" id="battle-countdown"></div>
+        <div class="battle-result" id="battle-result"></div>
+    </div>
+
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- 효과음 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
     <script src="js/firebase-config.js"></script>
     <script src="js/game.js"></script>
+    <script src="js/battle.js"></script>
     <script src="js/ui.js"></script>
 </body>
 </html>

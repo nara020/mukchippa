@@ -755,3 +755,216 @@ body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* ========== 배틀 애니메이션 ========== */
+.battle-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.battle-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#battle-container {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#battle-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.battle-arena {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.battle-hand {
+    font-size: 6rem;
+    transition: transform 0.1s;
+}
+
+.battle-hand.left {
+    transform-origin: center right;
+}
+
+.battle-hand.right {
+    transform-origin: center left;
+    transform: scaleX(-1);
+}
+
+/* 손 흔들기 애니메이션 */
+.battle-hand.shaking {
+    animation: shake 0.15s ease-in-out infinite;
+}
+
+.battle-hand.left.shaking {
+    animation: shakeLeft 0.15s ease-in-out infinite;
+}
+
+.battle-hand.right.shaking {
+    animation: shakeRight 0.15s ease-in-out infinite;
+}
+
+@keyframes shakeLeft {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+@keyframes shakeRight {
+    0%, 100% { transform: scaleX(-1) translateY(0) rotate(5deg); }
+    50% { transform: scaleX(-1) translateY(-20px) rotate(-5deg); }
+}
+
+/* 결과 공개 애니메이션 */
+.battle-hand.reveal {
+    animation: reveal 0.5s ease-out forwards;
+}
+
+.battle-hand.left.reveal {
+    animation: revealLeft 0.5s ease-out forwards;
+}
+
+.battle-hand.right.reveal {
+    animation: revealRight 0.5s ease-out forwards;
+}
+
+@keyframes revealLeft {
+    0% { transform: translateX(-100px) scale(0.5); opacity: 0; }
+    60% { transform: translateX(20px) scale(1.2); }
+    100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+@keyframes revealRight {
+    0% { transform: scaleX(-1) translateX(-100px) scale(0.5); opacity: 0; }
+    60% { transform: scaleX(-1) translateX(20px) scale(1.2); }
+    100% { transform: scaleX(-1) translateX(0) scale(1); opacity: 1; }
+}
+
+/* 충돌 이펙트 */
+.battle-vs {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--md-error);
+    opacity: 0;
+    transform: scale(0);
+}
+
+.battle-vs.show {
+    animation: vsReveal 0.5s ease-out forwards;
+}
+
+@keyframes vsReveal {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    50% { transform: scale(1.5) rotate(10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* 카운트다운 */
+.battle-countdown {
+    font-size: 8rem;
+    font-weight: 700;
+    color: var(--md-primary);
+    text-shadow: 0 0 40px var(--md-primary);
+    opacity: 0;
+    position: absolute;
+}
+
+.battle-countdown.show {
+    animation: countdownPop 0.8s ease-out forwards;
+}
+
+@keyframes countdownPop {
+    0% { transform: scale(3); opacity: 0; }
+    30% { transform: scale(0.8); opacity: 1; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 0; }
+}
+
+/* 결과 텍스트 */
+.battle-result {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-top: 20px;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.battle-result.show {
+    animation: resultReveal 0.5s ease-out forwards;
+}
+
+.battle-result.win {
+    color: var(--md-primary);
+    text-shadow: 0 0 30px var(--md-primary);
+}
+
+.battle-result.lose {
+    color: var(--md-error);
+}
+
+.battle-result.draw {
+    color: var(--md-secondary);
+}
+
+.battle-result.continue {
+    color: var(--md-on-surface);
+    font-size: 2rem;
+}
+
+@keyframes resultReveal {
+    0% { transform: translateY(30px) scale(0.5); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* 승리 이펙트 - 컨페티 */
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+}
+
+.confetti.active {
+    animation: confettiFall 1s ease-out forwards;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(400px) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* 화면 흔들림 (패배) */
+.screen.shake {
+    animation: screenShake 0.5s ease-in-out;
+}
+
+@keyframes screenShake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+    20%, 40%, 60%, 80% { transform: translateX(10px); }
+}

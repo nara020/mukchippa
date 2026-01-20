@@ -349,10 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         choiceBtns.forEach(btn => btn.classList.add('disabled'));
 
-        resultDisplay.classList.remove('hidden');
-        myChoiceDisplay.querySelector('.result-emoji').textContent = CHOICES[myChoice].emoji;
-        opponentChoiceDisplay.querySelector('.result-emoji').textContent = CHOICES[oppChoice].emoji;
-
         const result = processRound(roomData, myNum);
 
         if (!result) {
@@ -360,16 +356,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        resultText.textContent = result.message;
-        resultText.className = 'result-text';
-
-        if (result.type === 'draw') {
-            resultText.classList.add('draw');
-        } else if (result.gameOver) {
-            resultText.classList.add(result.winner === myNum ? 'win' : 'lose');
+        // 3D 배틀 애니메이션 실행!
+        try {
+            await battleAnimation.play(myChoice, oppChoice, result);
+        } catch (e) {
+            console.error('Battle animation error:', e);
+            // 애니메이션 실패 시 기존 방식으로 폴백
+            resultDisplay.classList.remove('hidden');
+            myChoiceDisplay.querySelector('.result-emoji').textContent = CHOICES[myChoice].emoji;
+            opponentChoiceDisplay.querySelector('.result-emoji').textContent = CHOICES[oppChoice].emoji;
+            resultText.textContent = result.message;
+            resultText.className = 'result-text';
+            if (result.type === 'draw') {
+                resultText.classList.add('draw');
+            } else if (result.gameOver) {
+                resultText.classList.add(result.winner === myNum ? 'win' : 'lose');
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
-
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
         if (gameManager.isHost()) {
             if (result.gameOver) {
